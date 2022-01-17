@@ -1,3 +1,4 @@
+from crypt import methods
 from flask import Flask, jsonify, abort
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
@@ -25,21 +26,55 @@ class Shop(db.Model):
 class Order(db.Model):
     id: int
     shop: str
-    address:str
+    address: str
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=False)
     shop = db.Column(db.Integer)
     address = db.Column(db.String(200))
+    price = db.Column(db.Integer)
+
+@dataclass
+class Calc(db.Model):
+    id: int
+    shop: str
+    price: str
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=False)
+    shop = db.Column(db.Integer)
+    price = db.Column(db.Integer)
 
 @app.route('/api/shop')
 def index():
     return jsonify(Shop.query.all())
 
+@app.route('/api/calc', methods=['GET'])
+def calc_list():
+    return jsonify(Calc.query.all())
+
+@app.route('/api/calc/sum/<int:shopId>')
+def calc_sum(shopId):
+    calc_list = Calc.query.filter_by(shop=shopId).all()
+    sum = 0
+    for calc in calc_list:
+        sum += calc.price
+    return jsonify({
+        'message' : f'Shop {shopId} INCOME Total : {sum}won'
+    })
+
+@app.route('/api/calc/<int:orderId>', methods=['DELETE'])
+def calc_delete(orderId):
+    calc = Calc.query.get(orderId)
+    db.session.delete(calc)
+    db.session.commit()
+    return jsonify({
+       'message' : f'{orderId} order deleted' 
+    })
+
 @app.route('/api/order/<int:id>/deliver_finish', methods=['POST'])
 def deliver_finish(id):
     publish('order_deliverfinished', id)
     return jsonify({
-        'message' : 'success'
+        'message' : f'{id} order delivery completed'
     })
 
 if __name__ == '__main__':

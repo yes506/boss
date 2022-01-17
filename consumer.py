@@ -1,6 +1,6 @@
 import json
 import pika
-from main import Shop, Order, db
+from main import Shop, Order, Calc, db
 
 params = pika.URLParameters('amqps://adyzazjv:eX3pCl0sCOFl6iETiL5bf0fngTrkLN0j@dingo.rmq.cloudamqp.com/adyzazjv')
 
@@ -32,8 +32,10 @@ def callback(ch, method, properties, body):
         db.session.commit()
 
     elif properties.content_type == 'order_created':
-        order = Order(id=data['id'], shop=data['shop'], address=data['address'])
+        order = Order(id=data['id'], shop=data['shop'], address=data['address'], price=data['price'])
+        calc = Calc(id=data['id'], shop=data['shop'], price=data['price'])
         db.session.add(order)
+        db.session.add(calc)
         db.session.commit()
 
     elif properties.content_type == 'order_updated':
